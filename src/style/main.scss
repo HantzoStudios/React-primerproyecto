@@ -1,4 +1,7 @@
-@import "./base.scss";
 @import "./variables.scss";
+@import "./mixins.scss";
+@import "./base.scss";
+@import "./button.scss";
 @import "./navigation.scss";  
 @import "./portfolio.scss";  
+// el orden de los estilos es critico,por ejemplo si ponemos variables abajo, el resto no podria leerlo
