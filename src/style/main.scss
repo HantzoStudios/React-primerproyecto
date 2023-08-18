@@ -4,4 +4,6 @@
 @import "./button.scss";
 @import "./navigation.scss";  
 @import "./portfolio.scss";  
+@import "./auth.scss";  
+
 // el orden de los estilos es critico,por ejemplo si ponemos variables abajo, el resto no podria leerlo

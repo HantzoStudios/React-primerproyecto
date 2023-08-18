@@ -1,61 +1,130 @@
-  import React, { Component } from 'react';
+import React, { Component } from "react";
+import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
+import axios from "axios";
 
-  // M7D181-499 - Configuración básica de ruta (ENRUTAMIENTO): importamos...
-  // ... librerias para enrutado, lo importamos como route para que sea mas sencillo
-  import {
-    BrowserRouter as Router, Switch, Route } from 'react-router-dom';
+import NavigationContainer from "./navigation/navigation-container";
+import Home from "./pages/home";
+import About from "./pages/about";
+import Contact from "./pages/contact";
+import Blog from "./pages/blog";
+import PortfolioDetail from "./portfolio/portfolio-detail";
+import Auth from "./pages/auth";
+import NoMatch from "./pages/no-match";
 
-  // Tenemos que imporetar el componente que acabamos de crear, como es nuestra creacion, debemeos de ponerle la ruta
-  import PortfolioContainer from "./portfolio/portfolio-container";
-  import NavigationContainer from "./navigation/navigation-container";
+export default class App extends Component {
+  constructor(props) {
+    super(props);
 
-  // M7D181-499 - Configuración básica de ruta (ENRUTAMIENTO): Importamos las paginas para el ejercicio
-  import Home from "./pages/home";
-  import About from "./pages/about";
-  // M7D182 501. - Guía para trabajar con estilos activos de NavLink: importamos los otros dos enlaces
-  import Contact from "./pages/contact";
-  import Blog from "./pages/blog";
-  // M7D183-503.Cómo acceder a los valores de URL en React - importamos 
-  import PortfolioDetail from "./portfolio/Portfolio-Detail";
-  // M7D183504-Implementando una ruta ERROR404 con React Router- importamos
-  import NoMatch from "./pages/no-match";
- 
+    this.state = {
+      loggedInStatus: "NOT_LOGGED_IN"
+    };
 
-  // esto no entiendo muy bien
-  export default class App extends Component {
-
-
-render(){
-      return (
-        <div className='container'>
-        
-          <Router>
-            <div>
-              {/* barra de btones del navegador */}
-              <NavigationContainer />
-
-              {/* M7D181-499 - Configuración básica de ruta (ENRUTAMIENTO): 
-              Dependiendo de como pongamos la ruta, nos mostrara uno u otro mensaje 
-              en el navegador dependiendo de la ruta que le pongamos */}
-              <Switch>
-                <Route exact path="/" component={Home} />
-                <Route path="/about-me" component={About} />
-
-                {/* // M7D182 501. - Guía para trabajar con estilos activos de NavLink: añadimos los otros dos enlaces */}
-                <Route path="/contact" component={Contact} />
-                <Route path="/blog" component={Blog} />
-
-                {/* M7D183-503.Cómo acceder a los valores de URL en React - creamos una ruta */}
-                <Route path="/portfolio/:slug" component={PortfolioDetail} />
-
-                {/* M7D183 504. Implementing a Catch All Route with React Router - Implementando una ruta Catch All con React Router */}
-                <Route component={NoMatch} />
-
-
-            </Switch>
-            </div>
-          </Router>
-        </div>
-      );
-    }
+    this.handleSuccessfulLogin = this.handleSuccessfulLogin.bind(this);
+    this.handleUnsuccessfulLogin = this.handleUnsuccessfulLogin.bind(this);
+    this.handleSuccessfulLogout = this.handleSuccessfulLogout.bind(this);
   }
+
+  handleSuccessfulLogin() {
+    this.setState({
+      loggedInStatus: "LOGGED_IN"
+    });
+  }
+
+  handleUnsuccessfulLogin() {
+    this.setState({
+      loggedInStatus: "NOT_LOGGED_IN"
+    });
+  }
+  handleSuccessfulLogout() {
+    this.setState({
+      loggedInStatus: "NOT_LOGGED_IN"
+    });
+  }
+
+
+  checkLoginStatus() {
+    return axios
+      .get("https://api.devcamp.space/logged_in", {
+        withCredentials: true
+      })
+      .then(response => {
+        const loggedIn = response.data.logged_in;
+        const loggedInStatus = this.state.loggedInStatus;
+
+        // If loggedIn and status LOGGED_IN => return data
+        // If loggedIn status NOT_LOGGED_IN => update state
+        // If not loggedIn and status LOGGED_IN => update state
+
+        if (loggedIn && loggedInStatus === "LOGGED_IN") {
+          return loggedIn;
+        } else if (loggedIn && loggedInStatus === "NOT_LOGGED_IN") {
+          this.setState({
+            loggedInStatus: "LOGGED_IN"
+          });
+        } else if (!loggedIn && loggedInStatus === "LOGGED_IN") {
+          this.setState({
+            loggedInStatus: "NOT_LOGGED_IN"
+          });
+        }
+      })
+      .catch(error => {
+        console.log("Error", error);
+      });
+  }
+
+  componentDidMount() {
+    this.checkLoginStatus();
+  }
+
+  // M7D204 547. Construyendo una guardia de ruta en React, para que no entren...
+  // escribiendo en la barra de direcciones  
+  authorizedPages () {
+    return [
+      <Route path="/blog" component={Blog} />
+    ]
+  }
+
+  render() {
+    return (
+      <div className="container">
+        <Router>
+          <div>
+            <NavigationContainer 
+            loggedInStatus={this.state.loggedInStatus}
+            handleSuccessfulLogout = {this.handleSuccessfulLogout}
+            />
+
+            <h2>{this.state.loggedInStatus}</h2>
+
+            <Switch>
+              <Route exact path="/" component={Home} />
+
+              <Route
+                path="/auth"
+                render={props => (
+                  <Auth
+                    {...props}
+                    handleSuccessfulLogin={this.handleSuccessfulLogin}
+                    handleUnsuccessfulLogin={this.handleUnsuccessfulLogin}
+                  />
+                )}
+              />
+
+              <Route path="/about-me" component={About} />
+              <Route path="/contact" component={Contact} />
+              {this.state.loggedInStatus === "LOGGED_IN" ? (
+                this.authorizedPages()
+                ) : null}
+              <Route
+                exact
+                path="/portfolio/:slug"
+                component={PortfolioDetail}
+              />
+              <Route component={NoMatch} />
+            </Switch>
+          </div>
+        </Router>
+      </div>
+    );
+  }
+}
